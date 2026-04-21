@@ -1,0 +1,82 @@
+name: Weekly Wine Monitor
+
+on:
+  schedule:
+    # Sunday 00:00 UTC = Sunday 09:00 KST
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+    inputs:
+      channels_limit:
+        description: "Limit channels (for dry-run testing)"
+        required: false
+        default: ""
+      skip_email:
+        description: "Skip email send"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Cache Whisper model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: whisper-base-v1
+
+      - name: Run weekly monitor
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          args=()
+          if [ -n "${{ inputs.channels_limit }}" ]; then
+            args+=(--channels-limit "${{ inputs.channels_limit }}")
+          fi
+          if [ "${{ inputs.skip_email }}" = "true" ]; then
+            args+=(--no-email)
+          fi
+          python weekly_monitor.py "${args[@]}"
+
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/
+          if git diff --staged --quiet; then
+            echo "No report changes to commit"
+          else
+            git commit -m "chore: weekly report $(date -u +'%Y-W%V')"
+            git push
+          fi
