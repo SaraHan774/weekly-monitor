@@ -18,6 +18,7 @@ DEFAULTS: Dict[str, Any] = {
         "name": "YouTube Topic Weekly",
         "language": "ko",
         "topic_hint": "",
+        "audience": "",
         "repo_fallback": "owner/repo",
     },
     "discovery": {
@@ -25,6 +26,7 @@ DEFAULTS: Dict[str, Any] = {
         "top_n": 10,
         "fallback_buffer": 5,
         "shorts_min_duration_sec": 60,
+        "relevance_filter": False,
     },
     "processing": {
         "whisper_model": "base",
@@ -32,6 +34,8 @@ DEFAULTS: Dict[str, Any] = {
         "beam_size": 1,
         "retry_attempts": 2,
         "retry_backoff_sec": 2.0,
+        "gemini_model": "gemini-3.5-flash",
+        "gemini_rpm": 4,
     },
     "report": {
         "output_dir": "reports",

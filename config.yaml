@@ -5,6 +5,9 @@ project:
   name: "Wine YouTube Weekly"
   language: "ko"
   topic_hint: "와인"
+  audience: >-
+    와인을 취미로 공부하는 중급 학습자. 주요 품종·산지는 알지만 세부 용어와
+    희귀 품종은 설명이 필요하다. 와인 지식 학습과 구매·시음 참고가 목적.
   repo_fallback: "SaraHan774/weekly-monitor"
 
 discovery:
@@ -12,6 +15,7 @@ discovery:
   top_n: 10
   fallback_buffer: 5
   shorts_min_duration_sec: 60
+  relevance_filter: true
 
 processing:
   whisper_model: "base"

@@ -4,7 +4,7 @@ Pipeline:
   1. Read channels.yaml + config.yaml
   2. Discover videos uploaded in the last `discovery.lookback_days` across all channels (via RSS)
   3. Rank by view count → pick top `discovery.top_n`
-  4. For each: download audio → transcribe with Whisper → summarize with Claude
+  4. For each: download audio → transcribe with Whisper → summarize with Gemini
   5. Assemble a markdown report at <output_dir>/<filename_pattern>
   6. Send notification with the report link (channel = config.notification.channel)
 
@@ -157,7 +157,16 @@ def process_video(video: Dict, workdir: Path, cfg: Dict[str, Any]) -> Dict:
 
         stage = "summarize"
         summary = with_retry(
-            lambda: summarize_with_gemini(transcripts, language=cfg["project"]["language"]),
+            lambda: summarize_with_gemini(
+                transcripts,
+                language=cfg["project"]["language"],
+                video_title=video["title"],
+                channel_name=video["channel_name"],
+                topic_hint=cfg["project"]["topic_hint"],
+                audience=cfg["project"]["audience"],
+                model=proc["gemini_model"],
+                rpm=proc["gemini_rpm"],
+            ),
             label=f"summarize {video['video_id']}", **retry_kwargs,
         )
 
@@ -276,6 +285,27 @@ def main(argv=None) -> int:
         logger.info(f"Skipping {len(seen)} already-processed video(s): " +
                     ", ".join(v["video_id"] for v in seen))
     candidates = new
+
+    if (
+        candidates
+        and not args.no_process
+        and cfg["discovery"]["relevance_filter"]
+        and cfg["project"]["topic_hint"]
+    ):
+        from gemini_summarize import check_relevance
+
+        relevant = check_relevance(
+            candidates, cfg["project"]["topic_hint"],
+            model=cfg["processing"]["gemini_model"],
+            rpm=cfg["processing"]["gemini_rpm"],
+        )
+        dropped = [v for v, ok in zip(candidates, relevant) if not ok]
+        if dropped:
+            logger.info(
+                f"Relevance filter dropped {len(dropped)} off-topic video(s): " +
+                ", ".join(f"[{v['channel_name']}] {v['title']}" for v in dropped)
+            )
+        candidates = [v for v, ok in zip(candidates, relevant) if ok]
 
     if not candidates:
         logger.warning("No new videos found — skipping report and email")

@@ -150,3 +150,15 @@ def test_load_overrides_retry_params_when_provided(tmp_path):
     cfg = load_config(path)
     assert cfg["processing"]["retry_attempts"] == 5
     assert cfg["processing"]["retry_backoff_sec"] == 0.5
+
+
+def test_relevance_filter_defaults_to_false(tmp_path):
+    cfg = load_config(tmp_path / "missing.yaml")
+    assert cfg["discovery"]["relevance_filter"] is False
+
+
+def test_relevance_filter_can_be_enabled(tmp_path):
+    path = tmp_path / "config.yaml"
+    path.write_text("discovery:\n  relevance_filter: true\n", encoding="utf-8")
+    cfg = load_config(path)
+    assert cfg["discovery"]["relevance_filter"] is True

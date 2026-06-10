@@ -85,7 +85,8 @@ This monitor is designed to be invoked by other AI agents as well as humans. Con
 - **Side effects** when not in dry run:
   - Writes `<config.report.output_dir>/<config.report.filename_pattern>` (default `reports/YYYY-Www.md`)
   - Writes `<output_dir>/.processed.json` (cross-run dedupe state, auto-pruned after 90 days)
-  - Calls the Gemini API for each processed video (free tier today; retries up to `processing.retry_attempts` per stage)
+  - Calls the Gemini API **once per processed video** (single JSON-mode call returns both summaries, model = `processing.gemini_model`). All Gemini calls are globally paced to `processing.gemini_rpm` (default 4, under the observed 5 RPM per-model free-tier limit) and 429/503s wait for the API-suggested retry delay
+  - When `discovery.relevance_filter: true` and `project.topic_hint` is set, makes one extra batch Gemini call to classify candidate titles and drops off-topic videos before processing (fails open on API errors; skipped with `--no-process`)
   - Calls Gmail SMTP if notification channel is gmail and `--no-email` is not set
   - Writes to `/tmp/youtube-monitor/<video_id>` during processing (cleaned up per video)
 - **Configuration**: read `config.yaml`. Override individual fields with `--days`, `--top`, `--no-process`, `--no-email`, `--channels-limit`. Pass an alternate config with `--config path/to/other.yaml`.

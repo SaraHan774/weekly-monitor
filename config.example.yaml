@@ -9,6 +9,11 @@ project:
   # Optional: short topic hint used in summary prompts (improves domain term recognition).
   # Leave empty to disable.
   topic_hint: ""
+  # Optional: who reads the reports and why, injected into summary prompts as a
+  # [READER] line. Drives the glossary depth (which terms need explaining) and the
+  # "viewer insights" section (what the reader should take away). Leave empty to
+  # disable reader-aware tailoring.
+  audience: ""
   # Fallback "owner/repo" used to build the report URL when GITHUB_REPOSITORY env is missing.
   # Only used in local runs; CI sets GITHUB_REPOSITORY automatically.
   repo_fallback: "owner/repo"
@@ -23,6 +28,10 @@ discovery:
   fallback_buffer: 5
   # Videos shorter than this many seconds are treated as Shorts and dropped.
   shorts_min_duration_sec: 60
+  # When true (and project.topic_hint is set), candidate titles are classified by
+  # Gemini in one batch call and off-topic videos are dropped before processing.
+  # Fails open (keeps everything) on API errors. Skipped with --no-process.
+  relevance_filter: false
 
 processing:
   # Whisper model size: "tiny" | "base" | "small" | "medium" | "large".
@@ -37,6 +46,14 @@ processing:
   retry_attempts: 2
   # Initial backoff between retries (doubles per attempt).
   retry_backoff_sec: 2.0
+  # Gemini model for summarization + relevance filtering. Must be free-tier
+  # eligible if you run on the free tier (e.g. gemini-3.5-flash, gemini-2.5-flash).
+  # Free-tier quota is tracked PER MODEL, so switching models resets the bucket.
+  gemini_model: "gemini-3.5-flash"
+  # Max Gemini API requests per minute (global pace across all calls in a run).
+  # The observed free-tier limit for flash models is 5/min per model — keep
+  # headroom below that. 429s additionally wait for the API-suggested retry delay.
+  gemini_rpm: 4
 
 report:
   # Directory where weekly reports are written, relative to repo root.
