@@ -27,6 +27,7 @@ DEFAULTS: Dict[str, Any] = {
         "fallback_buffer": 5,
         "shorts_min_duration_sec": 60,
         "relevance_filter": False,
+        "max_per_channel": 0,
     },
     "processing": {
         "whisper_model": "base",
@@ -87,6 +88,8 @@ def _validate_static(cfg: Dict[str, Any]) -> None:
         raise ValueError("discovery.top_n must be >= 1")
     if cfg["discovery"]["lookback_days"] < 1:
         raise ValueError("discovery.lookback_days must be >= 1")
+    if cfg["discovery"]["max_per_channel"] < 0:
+        raise ValueError("discovery.max_per_channel must be >= 0 (0 disables the cap)")
 
 
 def validate_runtime(cfg: Dict[str, Any], *, will_send_email: bool, will_process: bool) -> None:

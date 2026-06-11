@@ -6,7 +6,7 @@ _is_short() cover the logic that can break on a code change.
 """
 from datetime import datetime, timezone
 
-from discovery import _is_short, parse_rss
+from discovery import _cap_per_channel, _is_short, parse_rss
 
 from .conftest import FIXTURES_DIR
 
@@ -71,3 +71,30 @@ def test_is_short_respects_threshold_argument():
 def test_is_short_treats_missing_duration_as_unknown_not_short():
     # If yt-dlp returned 0 duration (unknown), don't classify as Short by length
     assert not _is_short({"url": "https://youtube.com/watch?v=abc", "duration": 0}, 60)
+
+
+def _vid(channel, vid):
+    return {"channel_name": channel, "video_id": vid}
+
+
+def test_cap_per_channel_limits_each_channel():
+    videos = [
+        _vid("A", "a1"), _vid("A", "a2"), _vid("A", "a3"),
+        _vid("B", "b1"), _vid("B", "b2"),
+        _vid("C", "c1"),
+    ]
+    kept = _cap_per_channel(videos, 2)
+    ids = [v["video_id"] for v in kept]
+    assert ids == ["a1", "a2", "b1", "b2", "c1"]  # A capped at 2, order preserved
+
+
+def test_cap_per_channel_zero_disables_cap():
+    videos = [_vid("A", "a1"), _vid("A", "a2"), _vid("A", "a3")]
+    assert _cap_per_channel(videos, 0) == videos
+
+
+def test_cap_per_channel_keeps_highest_viewed_first():
+    # Input is pre-sorted by view_count desc; cap must keep the earliest (highest) entries
+    videos = [_vid("A", "high"), _vid("A", "mid"), _vid("A", "low")]
+    kept = _cap_per_channel(videos, 1)
+    assert [v["video_id"] for v in kept] == ["high"]

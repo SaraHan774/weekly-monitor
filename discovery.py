@@ -101,13 +101,38 @@ def _is_short(video: Dict, min_duration_sec: int) -> bool:
     return False
 
 
+def _cap_per_channel(videos: List[Dict], max_per_channel: int) -> List[Dict]:
+    """Keep at most `max_per_channel` videos per channel, preserving input order.
+
+    `videos` is expected pre-sorted by view_count desc, so the kept entries are each
+    channel's highest-viewed uploads. `max_per_channel <= 0` disables the cap.
+    """
+    if max_per_channel <= 0:
+        return videos
+    counts: Dict[str, int] = {}
+    out: List[Dict] = []
+    for v in videos:
+        key = v.get("channel_name", "")
+        if counts.get(key, 0) >= max_per_channel:
+            continue
+        counts[key] = counts.get(key, 0) + 1
+        out.append(v)
+    return out
+
+
 def discover_top_videos(
     channels: List[Dict],
     days: int = 7,
     top_n: int = 10,
     shorts_min_duration_sec: int = 60,
+    max_per_channel: int = 0,
 ) -> List[Dict]:
-    """Discover the top N most-viewed non-Shorts videos uploaded across all channels in the last `days` days."""
+    """Discover the top N most-viewed non-Shorts videos uploaded across all channels in the last `days` days.
+
+    When `max_per_channel > 0`, no single channel contributes more than that many videos
+    to the final list — the cap is applied after the view-count sort so each channel keeps
+    its highest-viewed uploads, diversifying the report across channels.
+    """
     candidates: List[Dict] = []
     logger.info(f"Scanning {len(channels)} channels for videos from the last {days} days")
 
@@ -139,4 +164,5 @@ def discover_top_videos(
         final.append(v)
 
     final.sort(key=lambda x: x.get("view_count", 0), reverse=True)
+    final = _cap_per_channel(final, max_per_channel)
     return final[:top_n]

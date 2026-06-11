@@ -12,10 +12,12 @@ project:
 
 discovery:
   lookback_days: 7
-  top_n: 10
+  top_n: 5
   fallback_buffer: 5
   shorts_min_duration_sec: 60
   relevance_filter: true
+  # Cap videos per channel so prolific channels don't dominate the top_n by view count.
+  max_per_channel: 2
 
 processing:
   whisper_model: "base"

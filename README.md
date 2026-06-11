@@ -7,7 +7,7 @@ The default instance is wine — see `channels.yaml` and `config.yaml`. Fork and
 ## What it does (default schedule: Sunday 09:00 KST)
 
 1. Scans the YouTube channels listed in `channels.yaml` for videos uploaded in the last `discovery.lookback_days` days
-2. Ranks them by view count and picks the top `discovery.top_n`
+2. Ranks them by view count and picks the top `discovery.top_n` (capped at `discovery.max_per_channel` per channel so no single channel dominates)
 3. Downloads audio, transcribes it with Whisper, and summarizes with Gemini
 4. Commits a markdown report to `reports/YYYY-Www.md` (configurable)
 5. Emails the report link

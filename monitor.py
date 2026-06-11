@@ -279,6 +279,7 @@ def main(argv=None) -> int:
         days=days,
         top_n=top_n + fallback_buffer,
         shorts_min_duration_sec=shorts_min,
+        max_per_channel=cfg["discovery"]["max_per_channel"],
     )
     new, seen = filter_new(candidates, state)
     if seen:

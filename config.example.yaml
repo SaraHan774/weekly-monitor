@@ -32,6 +32,10 @@ discovery:
   # Gemini in one batch call and off-topic videos are dropped before processing.
   # Fails open (keeps everything) on API errors. Skipped with --no-process.
   relevance_filter: false
+  # Cap on how many videos a single channel may contribute to the final top_n.
+  # Applied after the view-count sort, so each channel keeps its highest-viewed
+  # uploads — diversifies the report across channels. 0 disables the cap.
+  max_per_channel: 0
 
 processing:
   # Whisper model size: "tiny" | "base" | "small" | "medium" | "large".
